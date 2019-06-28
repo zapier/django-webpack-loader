@@ -1,6 +1,7 @@
 import json
 import time
-from io import open
+import io
+import urllib
 
 from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage
@@ -21,10 +22,16 @@ class WebpackLoader(object):
         self.name = name
         self.config = load_config(self.name)
 
+    def _load_uri(self, uri):
+        if stats_file.startswith(('http://', 'https://')):
+            with io.open(uri, encoding='utf-8') as f:
+                return f
+        with urllib.request.urlopen(uri) as r:
+            return r.read()
+
     def _load_assets(self):
         try:
-            with open(self.config['STATS_FILE'], encoding="utf-8") as f:
-                return json.load(f)
+            return json.load(self._load_uri(self.config['STATS_FILE']))
         except IOError:
             raise IOError(
                 'Error reading {0}. Are you sure webpack has generated '
